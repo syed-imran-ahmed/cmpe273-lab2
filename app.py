@@ -1,12 +1,4 @@
 
-"""
-This is a simple HelloWorld example to show the basics of writing a Http api
-using Spyne. Here's a sample:
-$ curl http://localhost:8000/say_hello?name=Dave\&times=3
-["Hello, Dave", "Hello, Dave", "Hello, Dave"]
-"""
-
-
 import logging
 import json
 import urllib
