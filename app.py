@@ -1,4 +1,3 @@
-
 import logging
 import json
 import urllib
@@ -12,7 +11,7 @@ from spyne.protocol.http import HttpRpc
 from spyne.server.wsgi import WsgiApplication
 
 
-class HelloWorldService(ServiceBase):
+class CheckCrimeService(ServiceBase):
     @srpc(String, String,String, _returns=Iterable(String))
     def checkcrime(lat, lon,radius):
         url='https://api.spotcrime.com/crimes.json?lat='+lat+'&lon='+lon+'&radius='+radius+'&key=.'
@@ -65,13 +64,9 @@ class HelloWorldService(ServiceBase):
 
             ####parse the crime time#####
             ti = obj.get('date')[9:]
-            #x = '11:01 PM'
-
             d = dt.strptime(ti,'%I:%M %p')
             crime_time = d.time()
-            #print crime_time
-            #print now_time < crime_time
-            #print crime_time
+        
             if crime_time >= t(00,01,00) and crime_time <= t(03,00,00):
                 dict['event_time_count']['12:01am-3am'] = dict['event_time_count'].get('12:01am-3am')+1
             elif crime_time >= t(03,01,00) and crime_time <= t(06,00,00):
@@ -88,17 +83,16 @@ class HelloWorldService(ServiceBase):
                 dict['event_time_count']['6:01pm-9pm'] = dict['event_time_count'].get('6:01pm-9pm')+1
             elif crime_time >= t(21,01,00) and crime_time < t(00,00,00) or crime_time == t(00,00,00):
                 dict['event_time_count']['9:01pm-12midnight'] = dict['event_time_count'].get('9:01pm-12midnight')+1
-            #print dict
-        #print data["crimes"]["address"]
+            
 
-            ###parse the street####
+            ##parse the address##
             add = obj.get('address')
             a=''
             if 'OF ' in add:
                 a = add.split('OF ')
                 for o in a:
-                    o=o.strip()
-                    if 'ST' in o:
+                    #o=o.strip()
+                    if ' ST' in o or ' AV' in o:
                         if street_dict.has_key(o):
                             street_dict[o] = street_dict.get(o)+1
                         else:
@@ -106,8 +100,8 @@ class HelloWorldService(ServiceBase):
             elif '& ' in add:
                 a =add.split('& ')
                 for o in a:
-                    o=o.strip()
-                    if 'ST' in o:
+                    #o=o.strip()
+                    if ' ST' in o or ' AV' in o:
                         if street_dict.has_key(o):
                             street_dict[o] = street_dict.get(o)+1
                         else:
@@ -115,23 +109,22 @@ class HelloWorldService(ServiceBase):
             elif 'BLOCK ' in add:
                 a = add.split('BLOCK ')
                 for o in a:
-                    o=o.strip()
-                    if 'ST' in o:
+                   # o=o.strip()
+                    if ' ST' in o or ' AV' in o:
                         if street_dict.has_key(o):
                             street_dict[o] = street_dict.get(o)+1
                         else:
                             street_dict.update({o:1})
 
         dict['the_most_dangerous_streets'] = heapq.nlargest(3,street_dict, key=street_dict.get) 
-        yield dict
-
+        yield dict  
 
 if __name__ == '__main__':
-    # Python daemon boilerplate
+    
     from wsgiref.simple_server import make_server
 
     logging.basicConfig(level=logging.DEBUG)
-    application = Application([HelloWorldService], 'checkcrime.',
+    application = Application([CheckCrimeService], 'checkcrime.street',
         in_protocol=HttpRpc(validator='soft'),
         out_protocol=JsonDocument(ignore_wrappers=True),
     )
